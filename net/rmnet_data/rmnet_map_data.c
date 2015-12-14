@@ -714,7 +714,7 @@ int rmnet_map_checksum_uplink_packet(struct sk_buff *skb,
 		skb_push(skb, sizeof(struct rmnet_map_ul_checksum_header_s));
 
 	if (unlikely(!(orig_dev->features &
-		(NETIF_F_V4_CSUM | NETIF_F_V6_CSUM)))) {
+		NETIF_F_CSUM_MASK))) {
 		ret = RMNET_MAP_CHECKSUM_SW;
 		goto sw_checksum;
 	}
