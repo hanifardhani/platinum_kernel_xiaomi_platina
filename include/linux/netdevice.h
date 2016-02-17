@@ -826,17 +826,21 @@ struct netdev_xdp {
 	};
 };
 
-/* This structure holds attributes of qdisc and classifiers
+/* These structures hold the attributes of qdisc and classifiers
  * that are being passed to the netdevice through the setup_tc op.
  */
 enum {
 	TC_SETUP_MQPRIO,
+	TC_SETUP_CLSU32,
 };
+
+struct tc_cls_u32_offload;
 
 struct tc_to_netdev {
 	unsigned int type;
 	union {
 		u8 tc;
+		struct tc_cls_u32_offload *cls_u32;
 	};
 };
 
