@@ -158,6 +158,7 @@ enum event_type_t {
 struct static_key_deferred perf_sched_events __read_mostly;
 static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
 static DEFINE_PER_CPU(int, perf_sched_cb_usages);
+static DEFINE_PER_CPU(struct pmu_event_list, pmu_sb_events);
 static DEFINE_PER_CPU(bool, is_idle);
 
 static atomic_t nr_mmap_events __read_mostly;
@@ -3697,6 +3698,26 @@ static void free_event_rcu(struct rcu_head *head)
 static void ring_buffer_attach(struct perf_event *event,
 			       struct ring_buffer *rb);
 
+static void detach_sb_event(struct perf_event *event)
+{
+	struct pmu_event_list *pel = per_cpu_ptr(&pmu_sb_events, event->cpu);
+
+	raw_spin_lock(&pel->lock);
+	list_del_rcu(&event->sb_list);
+	raw_spin_unlock(&pel->lock);
+}
+
+static void unaccount_pmu_sb_event(struct perf_event *event)
+{
+	if (event->parent)
+		return;
+
+	if (event->attach_state & PERF_ATTACH_TASK)
+		return;
+
+	detach_sb_event(event);
+}
+
 static void unaccount_event_cpu(struct perf_event *event, int cpu)
 {
 	if (event->parent)
@@ -3731,6 +3752,8 @@ static void unaccount_event(struct perf_event *event)
 		static_key_slow_dec_deferred(&perf_sched_events);
 
 	unaccount_event_cpu(event, event->cpu);
+
+	unaccount_pmu_sb_event(event);
 }
 
 /*
@@ -5930,13 +5953,25 @@ perf_event_aux_task_ctx(perf_event_aux_output_cb output, void *data,
 	rcu_read_unlock();
 }
 
+static void perf_event_sb_iterate(perf_event_aux_output_cb output, void *data)
+{
+	struct pmu_event_list *pel = this_cpu_ptr(&pmu_sb_events);
+	struct perf_event *event;
+
+	list_for_each_entry_rcu(event, &pel->list, sb_list) {
+		if (event->state < PERF_EVENT_STATE_INACTIVE)
+			continue;
+		if (!event_filter_match(event))
+			continue;
+		output(event, data);
+	}
+}
+
 static void
 perf_event_aux(perf_event_aux_output_cb output, void *data,
 	       struct perf_event_context *task_ctx)
 {
-	struct perf_cpu_context *cpuctx;
 	struct perf_event_context *ctx;
-	struct pmu *pmu;
 	int ctxn;
 
 	/*
@@ -5951,20 +5986,15 @@ perf_event_aux(perf_event_aux_output_cb output, void *data,
 	}
 
 	rcu_read_lock();
-	list_for_each_entry_rcu(pmu, &pmus, entry) {
-		cpuctx = get_cpu_ptr(pmu->pmu_cpu_context);
-		if (cpuctx->unique_pmu != pmu)
-			goto next;
-		perf_event_aux_ctx(&cpuctx->ctx, output, data, false);
-		ctxn = pmu->task_ctx_nr;
-		if (ctxn < 0)
-			goto next;
+	preempt_disable();
+	perf_event_sb_iterate(output, data);
+
+	for_each_task_context_nr(ctxn) {
 		ctx = rcu_dereference(current->perf_event_ctxp[ctxn]);
 		if (ctx)
 			perf_event_aux_ctx(ctx, output, data, false);
-next:
-		put_cpu_ptr(pmu->pmu_cpu_context);
 	}
+	preempt_enable();
 	rcu_read_unlock();
 }
 
@@ -8247,6 +8277,32 @@ unlock:
 	return pmu;
 }
 
+static void attach_sb_event(struct perf_event *event)
+{
+	struct pmu_event_list *pel = per_cpu_ptr(&pmu_sb_events, event->cpu);
+
+	raw_spin_lock(&pel->lock);
+	list_add_rcu(&event->sb_list, &pel->list);
+	raw_spin_unlock(&pel->lock);
+}
+
+static void account_pmu_sb_event(struct perf_event *event)
+{
+	struct perf_event_attr *attr = &event->attr;
+
+	if (event->parent)
+		return;
+
+	if (event->attach_state & PERF_ATTACH_TASK)
+		return;
+
+	if (attr->mmap || attr->mmap_data || attr->mmap2 ||
+	    attr->comm || attr->comm_exec ||
+	    attr->task ||
+	    attr->context_switch)
+		attach_sb_event(event);
+}
+
 static void account_event_cpu(struct perf_event *event, int cpu)
 {
 	if (event->parent)
@@ -8283,6 +8339,8 @@ static void account_event(struct perf_event *event)
 		static_key_slow_inc(&perf_sched_events.key);
 
 	account_event_cpu(event, event->cpu);
+
+	account_pmu_sb_event(event);
 }
 
 /*
@@ -9864,6 +9922,9 @@ static void __init perf_event_init_all_cpus(void)
 		swhash = &per_cpu(swevent_htable, cpu);
 		mutex_init(&swhash->hlist_mutex);
 		INIT_LIST_HEAD(&per_cpu(active_ctx_list, cpu));
+
+		INIT_LIST_HEAD(&per_cpu(pmu_sb_events.list, cpu));
+		raw_spin_lock_init(&per_cpu(pmu_sb_events.lock, cpu));
 	}
 }
 
