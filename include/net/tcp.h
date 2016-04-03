@@ -803,8 +803,9 @@ struct tcp_skb_cb {
 				TCPCB_REPAIRED)
 
 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
-	__u8		eor:1,		/* Is skb MSG_EOR marked? */
-			unused:7;
+	__u8		txstamp_ack:1,	/* Record TX timestamp for ack? */
+			eor:1,		/* Is skb MSG_EOR marked? */
+			unused:6;
 	__u32		ack_seq;	/* Sequence number ACK'd	*/
 	union {
 		struct {
