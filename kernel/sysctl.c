@@ -138,6 +138,9 @@ static int one_hundred = 100;
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
 #endif
+#ifdef CONFIG_PERF_EVENTS
+static int six_hundred_forty_kb = 640 * 1024;
+#endif
 
 /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
 static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
@@ -1208,45 +1211,6 @@ static struct ctl_table kern_table[] = {
 		.child		= key_sysctls,
 	},
 #endif
-#ifdef CONFIG_PERF_EVENTS
-	/*
-	 * User-space scripts rely on the existence of this file
-	 * as a feature check for perf_events being enabled.
-	 *
-	 * So it's an ABI, do not remove!
-	 */
-	{
-		.procname	= "perf_event_paranoid",
-		.data		= &sysctl_perf_event_paranoid,
-		.maxlen		= sizeof(sysctl_perf_event_paranoid),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
-	{
-		.procname	= "perf_event_mlock_kb",
-		.data		= &sysctl_perf_event_mlock,
-		.maxlen		= sizeof(sysctl_perf_event_mlock),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
-	{
-		.procname	= "perf_event_max_sample_rate",
-		.data		= &sysctl_perf_event_sample_rate,
-		.maxlen		= sizeof(sysctl_perf_event_sample_rate),
-		.mode		= 0644,
-		.proc_handler	= perf_proc_update_handler,
-		.extra1		= &one,
-	},
-	{
-		.procname	= "perf_cpu_time_max_percent",
-		.data		= &sysctl_perf_cpu_time_max_percent,
-		.maxlen		= sizeof(sysctl_perf_cpu_time_max_percent),
-		.mode		= 0644,
-		.proc_handler	= perf_cpu_time_max_percent_handler,
-		.extra1		= &zero,
-		.extra2		= &one_hundred,
-	},
-#endif
 #ifdef CONFIG_KMEMCHECK
 	{
 		.procname	= "kmemcheck",
@@ -1286,6 +1250,15 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &one,
 		.extra2		= &one,
+	},
+	{
+		.procname	= "perf_event_max_stack",
+		.data		= NULL, /* filled in by handler */
+		.maxlen		= sizeof(sysctl_perf_event_max_stack),
+		.mode		= 0644,
+		.proc_handler	= perf_event_max_stack_handler,
+		.extra1		= &zero,
+		.extra2		= &six_hundred_forty_kb,
 	},
 #endif
 #if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
