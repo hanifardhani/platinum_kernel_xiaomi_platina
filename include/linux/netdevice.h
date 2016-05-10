@@ -3340,6 +3340,8 @@ static __always_inline int ____dev_forward_skb(struct net_device *dev,
 	return 0;
 }
 
+void dev_queue_xmit_nit(struct sk_buff *skb, struct net_device *dev);
+
 extern int		netdev_budget;
 
 /* Called by rtnetlink.c:rtnl_unlock() */
