@@ -316,6 +316,13 @@ static int ip_rcv_finish(struct net *net, struct sock *sk, struct sk_buff *skb)
 	const struct iphdr *iph = ip_hdr(skb);
 	struct rtable *rt;
 
+	/* if ingress device is enslaved to an L3 master device pass the
+	 * skb to its handler for processing
+	 */
+	skb = l3mdev_ip_rcv(skb);
+	if (!skb)
+		return NET_RX_SUCCESS;
+
 	if (sysctl_ip_early_demux && !skb_dst(skb) && !skb->sk) {
 		const struct net_protocol *ipprot;
 		int protocol = iph->protocol;
