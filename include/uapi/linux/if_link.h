@@ -149,6 +149,7 @@ enum {
 	IFLA_LINK_NETNSID,
 	IFLA_PHYS_PORT_NAME,
 	IFLA_PROTO_DOWN,
+	IFLA_XDP,
 	__IFLA_MAX
 };
 
@@ -723,5 +724,16 @@ enum {
 };
 
 #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+
+/* XDP section */
+
+enum {
+	IFLA_XDP_UNSPEC,
+	IFLA_XDP_FD,
+	IFLA_XDP_ATTACHED,
+	__IFLA_XDP_MAX,
+};
+
+#define IFLA_XDP_MAX (__IFLA_XDP_MAX - 1)
 
 #endif /* _UAPI_LINUX_IF_LINK_H */
