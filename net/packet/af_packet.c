@@ -1961,10 +1961,8 @@ retry:
 	sockc.tsflags = sk->sk_tsflags;
 	if (msg->msg_controllen) {
 		err = sock_cmsg_send(sk, msg, &sockc);
-		if (unlikely(err)) {
-			err = -EINVAL;
+		if (unlikely(err))
 			goto out_unlock;
-		}
 	}
 
 	skb->protocol = proto;
