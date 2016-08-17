@@ -4486,11 +4486,8 @@ static int tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb,
 		if (tcp_prune_queue(sk) < 0)
 			return -1;
 
-		if (!sk_rmem_schedule(sk, skb, size)) {
+		while (!sk_rmem_schedule(sk, skb, size)) {
 			if (!tcp_prune_ofo_queue(sk))
-				return -1;
-
-			if (!sk_rmem_schedule(sk, skb, size))
 				return -1;
 		}
 	}
@@ -5026,9 +5023,15 @@ new_range:
 }
 
 /*
- * Purge the out-of-order queue.
- * Drop at least 12.5 % of sk_rcvbuf to avoid malicious attacks.
- * Return true if queue was pruned.
+ * Clean the out-of-order queue to make room.
+ * We drop high sequences packets to :
+ * 1) Let a chance for holes to be filled.
+ * 2) not add too big latencies if thousands of packets sit there.
+ *    (But if application shrinks SO_RCVBUF, we could still end up
+ *     freeing whole queue here)
+ * 3) Drop at least 12.5 % of sk_rcvbuf to avoid malicious attacks.
+ *
+ * Return true if queue has shrunk.
  */
 static bool tcp_prune_ofo_queue(struct sock *sk)
 {
