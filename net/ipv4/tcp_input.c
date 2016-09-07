@@ -5049,7 +5049,7 @@ static bool tcp_prune_ofo_queue(struct sock *sk)
 		prev = rb_prev(node);
 		rb_erase(node, &tp->out_of_order_queue);
 		goal -= rb_to_skb(node)->truesize;
-		__kfree_skb(rb_to_skb(node));
+		tcp_drop(sk, rb_to_skb(node));
 		if (!prev || goal <= 0) {
 			sk_mem_reclaim(sk);
 			if (atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf &&
@@ -5060,7 +5060,7 @@ static bool tcp_prune_ofo_queue(struct sock *sk)
 
 		node = prev;
 	} while (node);
-	tp->ooo_last_skb = rb_entry(prev, struct sk_buff, rbnode);
+	tp->ooo_last_skb = rb_to_skb(prev);
 
 	/* Reset SACK state.  A conforming SACK implementation will
 	 * do the same at a timeout based retransmit.  When a connection
