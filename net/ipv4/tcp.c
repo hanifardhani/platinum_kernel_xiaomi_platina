@@ -404,6 +404,9 @@ void tcp_init_sock(struct sock *sk)
 	 */
 	tp->snd_cwnd = TCP_INIT_CWND;
 
+	/* There's a bubble in the pipe until at least the first ACK. */
+	tp->app_limited = ~0U;
+
 	/* See draft-stevens-tcpca-spec-01 for discussion of the
 	 * initialization of these values.
 	 */
@@ -1033,6 +1036,9 @@ int tcp_sendpage(struct sock *sk, struct page *page, int offset,
 	int ret;
 
 	lock_sock(sk);
+
+	tcp_rate_check_app_limited(sk);  /* is sending application-limited? */
+
 	ret = tcp_sendpage_locked(sk, page, offset, size, flags);
 	release_sock(sk);
 
@@ -1134,6 +1140,8 @@ int tcp_sendmsg_locked(struct sock *sk, struct msghdr *msg, size_t size)
 	}
 
 	timeo = sock_sndtimeo(sk, flags & MSG_DONTWAIT);
+
+	tcp_rate_check_app_limited(sk);  /* is sending application-limited? */
 
 	/* Wait for a connection to finish. One exception is TCP Fast Open
 	 * (passive side) where data is allowed to be sent before a connection
