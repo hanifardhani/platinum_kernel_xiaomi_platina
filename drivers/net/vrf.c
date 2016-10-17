@@ -882,6 +882,7 @@ static struct sk_buff *vrf_ip_rcv(struct net_device *vrf_dev,
 {
 	skb->dev = vrf_dev;
 	skb->skb_iif = vrf_dev->ifindex;
+	IPCB(skb)->flags |= IPSKB_L3SLAVE;
 
 	/* loopback traffic; do not push through packet taps again.
 	 * Reset pkt_type for upper layers to process skb
