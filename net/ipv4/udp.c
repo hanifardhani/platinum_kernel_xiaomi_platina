@@ -133,6 +133,17 @@ EXPORT_SYMBOL(udp_memory_allocated);
 #define MAX_UDP_PORTS 65536
 #define PORTS_PER_CHAIN (MAX_UDP_PORTS / UDP_HTABLE_SIZE_MIN)
 
+/* IPCB reference means this can not be used from early demux */
+static bool udp_lib_exact_dif_match(struct net *net, struct sk_buff *skb)
+{
+#if IS_ENABLED(CONFIG_NET_L3_MASTER_DEV)
+	if (!net->ipv4.sysctl_udp_l3mdev_accept &&
+	    skb && ipv4_l3mdev_skb(IPCB(skb)->flags))
+		return true;
+#endif
+	return false;
+}
+
 static int udp_lib_lport_inuse(struct net *net, __u16 num,
 			       const struct udp_hslot *hslot,
 			       unsigned long *bitmap,
@@ -395,7 +406,8 @@ int udp_v4_get_port(struct sock *sk, unsigned short snum)
 
 static inline int compute_score(struct sock *sk, struct net *net,
 				__be32 saddr, unsigned short hnum, __be16 sport,
-				__be32 daddr, __be16 dport, int dif)
+				__be32 daddr, __be16 dport, int dif,
+			 	bool exact_dif)
 {
 	int score;
 	struct inet_sock *inet;
@@ -426,7 +438,7 @@ static inline int compute_score(struct sock *sk, struct net *net,
 		score += 4;
 	}
 
-	if (sk->sk_bound_dev_if) {
+	if (sk->sk_bound_dev_if || exact_dif) {
 		if (sk->sk_bound_dev_if != dif)
 			return -1;
 		score += 4;
@@ -441,7 +453,8 @@ static inline int compute_score(struct sock *sk, struct net *net,
  */
 static inline int compute_score2(struct sock *sk, struct net *net,
 				 __be32 saddr, __be16 sport,
-				 __be32 daddr, unsigned int hnum, int dif)
+				 __be32 daddr, unsigned int hnum, int dif,
+				 bool exact_dif)
 {
 	int score;
 	struct inet_sock *inet;
@@ -470,7 +483,7 @@ static inline int compute_score2(struct sock *sk, struct net *net,
 		score += 4;
 	}
 
-	if (sk->sk_bound_dev_if) {
+	if (sk->sk_bound_dev_if || exact_dif) {
 		if (sk->sk_bound_dev_if != dif)
 			return -1;
 		score += 4;
@@ -497,7 +510,7 @@ static u32 udp_ehashfn(const struct net *net, const __be32 laddr,
 /* called with read_rcu_lock() */
 static struct sock *udp4_lib_lookup2(struct net *net,
 		__be32 saddr, __be16 sport,
-		__be32 daddr, unsigned int hnum, int dif,
+		__be32 daddr, unsigned int hnum, int dif, bool exact_dif,
 		struct udp_hslot *hslot2, unsigned int slot2,
 		struct sk_buff *skb)
 {
@@ -509,7 +522,7 @@ static struct sock *udp4_lib_lookup2(struct net *net,
 	badness = 0;
 	udp_portaddr_for_each_entry_rcu(sk, &hslot2->head) {
 		score = compute_score2(sk, net, saddr, sport,
-				      daddr, hnum, dif);
+				      daddr, hnum, dif, exact_dif);
 		if (score > badness) {
 			reuseport = sk->sk_reuseport;
 			if (reuseport) {
@@ -544,6 +557,7 @@ struct sock *__udp4_lib_lookup(struct net *net, __be32 saddr,
 	unsigned short hnum = ntohs(dport);
 	unsigned int hash2, slot2, slot = udp_hashfn(net, hnum, udptable->mask);
 	struct udp_hslot *hslot2, *hslot = &udptable->hash[slot];
+	bool exact_dif = udp_lib_exact_dif_match(net, skb);
 	int score, badness, matches = 0, reuseport = 0;
 	u32 hash = 0;
 
@@ -556,7 +570,8 @@ struct sock *__udp4_lib_lookup(struct net *net, __be32 saddr,
 
 		result = udp4_lib_lookup2(net, saddr, sport,
 					  daddr, hnum, dif,
-					  hslot2, slot2, skb);
+					  exact_dif, hslot2,
+					  slot2, skb);
 		if (!result) {
 			hash2 = udp4_portaddr_hash(net, htonl(INADDR_ANY), hnum);
 			slot2 = hash2 & udptable->mask;
@@ -565,7 +580,8 @@ struct sock *__udp4_lib_lookup(struct net *net, __be32 saddr,
 				goto begin;
 
 			result = udp4_lib_lookup2(net, saddr, sport,
-						  htonl(INADDR_ANY), hnum, dif,
+						  htonl(INADDR_ANY),
+						  hnum, dif, exact_dif,
 						  hslot2, slot2, skb);
 		}
 		return result;
@@ -575,7 +591,7 @@ begin:
 	badness = 0;
 	sk_for_each_rcu(sk, &hslot->head) {
 		score = compute_score(sk, net, saddr, hnum, sport,
-				      daddr, dport, dif);
+				      daddr, dport, dif, exact_dif);
 		if (score > badness) {
 			reuseport = sk->sk_reuseport;
 			if (reuseport) {

@@ -56,6 +56,16 @@
 #include <trace/events/skb.h>
 #include "udp_impl.h"
 
+static bool udp6_lib_exact_dif_match(struct net *net, struct sk_buff *skb)
+{
+#if defined(CONFIG_NET_L3_MASTER_DEV)
+	if (!net->ipv4.sysctl_udp_l3mdev_accept &&
+	    skb && ipv6_l3mdev_skb(IP6CB(skb)->flags))
+		return true;
+#endif
+	return false;
+}
+
 static u32 udp6_ehashfn(const struct net *net,
 			const struct in6_addr *laddr,
 			const u16 lport,
@@ -120,7 +130,7 @@ static inline int compute_score(struct sock *sk, struct net *net,
 				unsigned short hnum,
 				const struct in6_addr *saddr, __be16 sport,
 				const struct in6_addr *daddr, __be16 dport,
-				int dif)
+				int dif, bool exact_dif)
 {
 	int score;
 	struct inet_sock *inet;
@@ -151,7 +161,7 @@ static inline int compute_score(struct sock *sk, struct net *net,
 		score++;
 	}
 
-	if (sk->sk_bound_dev_if) {
+	if (sk->sk_bound_dev_if || exact_dif) {
 		if (sk->sk_bound_dev_if != dif)
 			return -1;
 		score++;
@@ -166,7 +176,8 @@ static inline int compute_score(struct sock *sk, struct net *net,
 static inline int compute_score2(struct sock *sk, struct net *net,
 				 const struct in6_addr *saddr, __be16 sport,
 				 const struct in6_addr *daddr,
-				 unsigned short hnum, int dif)
+				 unsigned short hnum, int dif,
+				 bool exact_dif)
 {
 	int score;
 	struct inet_sock *inet;
@@ -194,7 +205,7 @@ static inline int compute_score2(struct sock *sk, struct net *net,
 		score++;
 	}
 
-	if (sk->sk_bound_dev_if) {
+	if (sk->sk_bound_dev_if || exact_dif) {
 		if (sk->sk_bound_dev_if != dif)
 			return -1;
 		score++;
@@ -209,9 +220,9 @@ static inline int compute_score2(struct sock *sk, struct net *net,
 /* called with read_rcu_lock() */
 static struct sock *udp6_lib_lookup2(struct net *net,
 		const struct in6_addr *saddr, __be16 sport,
-		const struct in6_addr *daddr, unsigned int hnum, int dif,
-		struct udp_hslot *hslot2, unsigned int slot2,
-		struct sk_buff *skb)
+		const struct in6_addr *daddr, unsigned int hnum,
+		int dif, bool exact_dif, struct udp_hslot *hslot2,
+		unsigned int slot2, struct sk_buff *skb)
 {
 	struct sock *sk, *result;
 	int score, badness, matches = 0, reuseport = 0;
@@ -221,7 +232,7 @@ static struct sock *udp6_lib_lookup2(struct net *net,
 	badness = -1;
 	udp_portaddr_for_each_entry_rcu(sk, &hslot2->head) {
 		score = compute_score2(sk, net, saddr, sport,
-				      daddr, hnum, dif);
+				      daddr, hnum, dif, exact_dif);
 		if (score > badness) {
 			reuseport = sk->sk_reuseport;
 			if (reuseport) {
@@ -257,6 +268,7 @@ struct sock *__udp6_lib_lookup(struct net *net,
 	unsigned short hnum = ntohs(dport);
 	unsigned int hash2, slot2, slot = udp_hashfn(net, hnum, udptable->mask);
 	struct udp_hslot *hslot2, *hslot = &udptable->hash[slot];
+	bool exact_dif = udp6_lib_exact_dif_match(net, skb);
 	int score, badness, matches = 0, reuseport = 0;
 	u32 hash = 0;
 
@@ -269,7 +281,8 @@ struct sock *__udp6_lib_lookup(struct net *net,
 
 		result = udp6_lib_lookup2(net, saddr, sport,
 					  daddr, hnum, dif,
-					  hslot2, slot2, skb);
+					  exact_dif, hslot2,
+					  slot2, skb);
 		if (!result) {
 			hash2 = udp6_portaddr_hash(net, &in6addr_any, hnum);
 			slot2 = hash2 & udptable->mask;
@@ -278,7 +291,8 @@ struct sock *__udp6_lib_lookup(struct net *net,
 				goto begin;
 
 			result = udp6_lib_lookup2(net, saddr, sport,
-						  &in6addr_any, hnum, dif,
+						  &in6addr_any, hnum,
+						  dif, exact_dif,
 						  hslot2, slot2, skb);
 		}
 		return result;
@@ -287,7 +301,8 @@ begin:
 	result = NULL;
 	badness = -1;
 	sk_for_each_rcu(sk, &hslot->head) {
-		score = compute_score(sk, net, hnum, saddr, sport, daddr, dport, dif);
+		score = compute_score(sk, net, hnum, saddr, sport, daddr, dport, dif,
+				      exact_dif);
 		if (score > badness) {
 			reuseport = sk->sk_reuseport;
 			if (reuseport) {
