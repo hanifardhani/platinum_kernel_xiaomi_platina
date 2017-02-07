@@ -204,6 +204,7 @@ config VXLAN
        tristate "Virtual eXtensible Local Area Network (VXLAN)"
        depends on INET
        select NET_UDP_TUNNEL
+       select GRO_CELLS
        ---help---
 	  This allows one to create vxlan virtual interfaces that provide
 	  Layer 2 Networks over Layer 3 Networks. VXLAN is often used
@@ -218,6 +219,7 @@ config GENEVE
        tristate "Generic Network Virtualization Encapsulation"
        depends on INET && NET_UDP_TUNNEL
        select NET_IP_TUNNEL
+       select GRO_CELLS
        ---help---
 	  This allows one to create geneve virtual interfaces that provide
 	  Layer 2 Networks over Layer 3 Networks. GENEVE is often used
