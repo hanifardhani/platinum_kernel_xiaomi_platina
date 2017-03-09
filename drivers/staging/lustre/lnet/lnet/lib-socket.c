@@ -534,7 +534,7 @@ lnet_sock_accept(struct socket **newsockp, struct socket *sock)
 
 	newsock->ops = sock->ops;
 
-	rc = sock->ops->accept(sock, newsock, O_NONBLOCK);
+	rc = sock->ops->accept(sock, newsock, O_NONBLOCK, false);
 	if (rc == -EAGAIN) {
 		/* Nothing ready, so wait for activity */
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -542,7 +542,7 @@ lnet_sock_accept(struct socket **newsockp, struct socket *sock)
 		schedule();
 		remove_wait_queue(sk_sleep(sock->sk), &wait);
 		set_current_state(TASK_RUNNING);
-		rc = sock->ops->accept(sock, newsock, O_NONBLOCK);
+		rc = sock->ops->accept(sock, newsock, O_NONBLOCK, false);
 	}
 
 	if (rc != 0)
