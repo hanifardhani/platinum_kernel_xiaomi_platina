@@ -1163,6 +1163,8 @@ int udpv6_sendmsg(struct sock *sk, struct msghdr *msg, size_t len)
 	int (*getfrag)(void *, char *, int, int, int, struct sk_buff *);
 	struct sockcm_cookie sockc;
 
+	sockc.tsflags = sk->sk_tsflags;
+
 	/* destination address check */
 	if (sin6) {
 		if (addr_len < offsetof(struct sockaddr, sa_data))
@@ -1286,7 +1288,6 @@ do_udp_sendmsg:
 
 	fl6.flowi6_mark = sk->sk_mark;
 	fl6.flowi6_uid = sk->sk_uid;
-	sockc.tsflags = sk->sk_tsflags;
 
 	if (msg->msg_controllen) {
 		opt = &opt_space;
