@@ -17,7 +17,7 @@ void gro_cells_receive(struct gro_cells *gcells, struct sk_buff *skb)
 	if (unlikely(!(dev->flags & IFF_UP)))
 		goto drop;
 
-	if (!gcells->cells || skb_cloned(skb) || !(dev->features & NETIF_F_GRO)) {
+	if (!gcells->cells || skb_cloned(skb) || netif_elide_gro(dev)) {
 		netif_rx(skb);
 		goto unlock;
 	}
