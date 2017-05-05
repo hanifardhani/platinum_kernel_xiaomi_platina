@@ -1537,6 +1537,7 @@ static void tcp_cwnd_application_limited(struct sock *sk)
 
 static void tcp_cwnd_validate(struct sock *sk, bool is_cwnd_limited)
 {
+	const struct tcp_congestion_ops *ca_ops = inet_csk(sk)->icsk_ca_ops;
 	struct tcp_sock *tp = tcp_sk(sk);
 
 	/* Track the strongest available signal of the degree to which the cwnd
@@ -1565,7 +1566,8 @@ static void tcp_cwnd_validate(struct sock *sk, bool is_cwnd_limited)
 			tp->snd_cwnd_used = tp->packets_out;
 
 		if (sysctl_tcp_slow_start_after_idle &&
-		    (s32)(tcp_time_stamp - tp->snd_cwnd_stamp) >= inet_csk(sk)->icsk_rto)
+		    (s32)(tcp_time_stamp - tp->snd_cwnd_stamp) >= inet_csk(sk)->icsk_rto &&
+		    !ca_ops->cong_control)
 			tcp_cwnd_application_limited(sk);
 
 		/* The following conditions together indicate the starvation
