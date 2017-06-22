@@ -797,7 +797,8 @@ enum xdp_netdev_command {
 	XDP_SETUP_PROG,
 	XDP_SETUP_PROG_HW,
 	/* Check if a bpf program is set on the device.  The callee should
-	 * return true if a program is currently attached and running.
+	 * set @prog_attached to one of XDP_ATTACHED_* values, note that "true"
+	 * is equivalent to XDP_ATTACHED_DRV.
 	 */
 	XDP_QUERY_PROG,
 	/* BPF program for offload callbacks, invoked at program load time. */
@@ -818,7 +819,7 @@ struct netdev_xdp {
 		};
 		/* XDP_QUERY_PROG */
 		struct {
-			bool prog_attached;
+			u8 prog_attached;
 			u32 prog_id;
 		};
 		/* BPF_OFFLOAD_VERIFIER_PREP */
@@ -3275,7 +3276,7 @@ struct sk_buff *dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
 
 typedef int (*xdp_op_t)(struct net_device *dev, struct netdev_xdp *xdp);
 int dev_change_xdp_fd(struct net_device *dev, int fd, u32 flags);
-bool __dev_xdp_attached(struct net_device *dev, xdp_op_t xdp_op, u32 *prog_id);
+u8 __dev_xdp_attached(struct net_device *dev, xdp_op_t xdp_op, u32 *prog_id);
 
 int __dev_forward_skb(struct net_device *dev, struct sk_buff *skb);
 int dev_forward_skb(struct net_device *dev, struct sk_buff *skb);
