@@ -1079,6 +1079,9 @@ enum {
 						 * passive connection is
 						 * established
 						 */
+	BPF_SOCK_OPS_NEEDS_ECN,		/* If connection's congestion control
+					 * needs ECN
+					 */
 };
 
 #endif /* _UAPI__LINUX_BPF_H__ */
