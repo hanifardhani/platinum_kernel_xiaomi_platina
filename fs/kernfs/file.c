@@ -611,7 +611,7 @@ static void kernfs_put_open_node(struct kernfs_node *kn,
 
 static int kernfs_fop_open(struct inode *inode, struct file *file)
 {
-	struct kernfs_node *kn = file->f_path.dentry->d_fsdata;
+	struct kernfs_node *kn = inode->i_private;
 	struct kernfs_root *root = kernfs_root(kn);
 	const struct kernfs_ops *ops;
 	struct kernfs_open_file *of;
@@ -762,7 +762,7 @@ static void kernfs_release_file(struct kernfs_node *kn,
 
 static int kernfs_fop_release(struct inode *inode, struct file *filp)
 {
-	struct kernfs_node *kn = filp->f_path.dentry->d_fsdata;
+	struct kernfs_node *kn = inode->i_private;
 	struct kernfs_open_file *of = kernfs_of(filp);
 
 	if (kn->flags & KERNFS_HAS_RELEASE) {
@@ -828,7 +828,7 @@ void kernfs_drain_open_files(struct kernfs_node *kn)
  */
 unsigned int kernfs_generic_poll(struct kernfs_open_file *of, poll_table *wait)
 {
-	struct kernfs_node *kn = of->file->f_path.dentry->d_fsdata;
+	struct kernfs_node *kn = kernfs_dentry_node(of->file->f_path.dentry);
 	struct kernfs_open_node *on = kn->attr.open;
 
 	poll_wait(of->file, &on->poll, wait);
@@ -842,7 +842,7 @@ unsigned int kernfs_generic_poll(struct kernfs_open_file *of, poll_table *wait)
 static unsigned int kernfs_fop_poll(struct file *filp, poll_table *wait)
 {
 	struct kernfs_open_file *of = kernfs_of(filp);
-	struct kernfs_node *kn = filp->f_path.dentry->d_fsdata;
+	struct kernfs_node *kn = kernfs_dentry_node(filp->f_path.dentry);
 	unsigned int ret;
 
 	if (!kernfs_get_active(kn))

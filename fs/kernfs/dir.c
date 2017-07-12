@@ -579,7 +579,7 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
 	if (d_really_is_negative(dentry))
 		goto out_bad_unlocked;
 
-	kn = dentry->d_fsdata;
+	kn = kernfs_dentry_node(dentry);
 	mutex_lock(&kernfs_mutex);
 
 	/* The kernfs node has been deactivated */
@@ -587,7 +587,7 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
 		goto out_bad;
 
 	/* The kernfs node has been moved? */
-	if (dentry->d_parent->d_fsdata != kn->parent)
+	if (kernfs_dentry_node(dentry->d_parent) != kn->parent)
 		goto out_bad;
 
 	/* The kernfs node has been renamed */
@@ -607,14 +607,8 @@ out_bad_unlocked:
 	return 0;
 }
 
-static void kernfs_dop_release(struct dentry *dentry)
-{
-	kernfs_put(dentry->d_fsdata);
-}
-
 const struct dentry_operations kernfs_dops = {
 	.d_revalidate	= kernfs_dop_revalidate,
-	.d_release	= kernfs_dop_release,
 };
 
 /**
@@ -630,8 +624,9 @@ const struct dentry_operations kernfs_dops = {
  */
 struct kernfs_node *kernfs_node_from_dentry(struct dentry *dentry)
 {
-	if (dentry->d_sb->s_op == &kernfs_sops)
-		return dentry->d_fsdata;
+	if (dentry->d_sb->s_op == &kernfs_sops &&
+	    !d_really_is_negative(dentry))
+		return kernfs_dentry_node(dentry);
 	return NULL;
 }
 
@@ -1059,7 +1054,7 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
 					unsigned int flags)
 {
 	struct dentry *ret;
-	struct kernfs_node *parent = dentry->d_parent->d_fsdata;
+	struct kernfs_node *parent = dir->i_private;
 	struct kernfs_node *kn;
 	struct inode *inode;
 	const void *ns = NULL;
@@ -1076,8 +1071,6 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
 		ret = NULL;
 		goto out_unlock;
 	}
-	kernfs_get(kn);
-	dentry->d_fsdata = kn;
 
 	/* attach dentry and inode */
 	inode = kernfs_get_inode(dir->i_sb, kn);
@@ -1114,7 +1107,7 @@ static int kernfs_iop_mkdir(struct inode *dir, struct dentry *dentry,
 
 static int kernfs_iop_rmdir(struct inode *dir, struct dentry *dentry)
 {
-	struct kernfs_node *kn  = dentry->d_fsdata;
+	struct kernfs_node *kn  = kernfs_dentry_node(dentry);
 	struct kernfs_syscall_ops *scops = kernfs_root(kn)->syscall_ops;
 	int ret;
 
@@ -1133,7 +1126,7 @@ static int kernfs_iop_rmdir(struct inode *dir, struct dentry *dentry)
 static int kernfs_iop_rename(struct inode *old_dir, struct dentry *old_dentry,
 			     struct inode *new_dir, struct dentry *new_dentry)
 {
-	struct kernfs_node *kn  = old_dentry->d_fsdata;
+	struct kernfs_node *kn = kernfs_dentry_node(old_dentry);
 	struct kernfs_node *new_parent = new_dir->i_private;
 	struct kernfs_syscall_ops *scops = kernfs_root(kn)->syscall_ops;
 	int ret;
@@ -1645,7 +1638,7 @@ static struct kernfs_node *kernfs_dir_next_pos(const void *ns,
 static int kernfs_fop_readdir(struct file *file, struct dir_context *ctx)
 {
 	struct dentry *dentry = file->f_path.dentry;
-	struct kernfs_node *parent = dentry->d_fsdata;
+	struct kernfs_node *parent = kernfs_dentry_node(dentry);
 	struct kernfs_node *pos = file->private_data;
 	const void *ns = NULL;
 
