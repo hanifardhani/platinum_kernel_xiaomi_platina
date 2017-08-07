@@ -193,7 +193,7 @@ nf_tproxy_get_sock_v6(struct net *net, struct sk_buff *skb, int thoff, void *hp,
 						   thoff + __tcp_hdrlen(tcph),
 						   saddr, sport,
 						   daddr, ntohs(dport),
-						   in->ifindex);
+						   in->ifindex, 0);
 
 			/* NOTE: we return listeners even if bound to
 			 * 0.0.0.0, those are filtered out in
@@ -204,7 +204,7 @@ nf_tproxy_get_sock_v6(struct net *net, struct sk_buff *skb, int thoff, void *hp,
 		case NFT_LOOKUP_ESTABLISHED:
 			sk = __inet6_lookup_established(net, &tcp_hashinfo,
 							saddr, sport, daddr, ntohs(dport),
-							in->ifindex);
+							in->ifindex, 0);
 			break;
 		default:
 			BUG();
