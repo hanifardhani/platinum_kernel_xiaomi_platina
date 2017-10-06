@@ -149,12 +149,6 @@ struct netem_skb_cb {
 	ktime_t		tstamp_save;
 };
 
-
-static struct sk_buff *netem_rb_to_skb(struct rb_node *rb)
-{
-	return container_of(rb, struct sk_buff, rbnode);
-}
-
 static inline struct netem_skb_cb *netem_skb_cb(struct sk_buff *skb)
 {
 	/* we assume we can use skb next/prev/tstamp as storage for rb_node */
@@ -365,7 +359,7 @@ static void tfifo_reset(struct Qdisc *sch)
 	struct rb_node *p;
 
 	while ((p = rb_first(&q->t_root))) {
-		struct sk_buff *skb = netem_rb_to_skb(p);
+		struct sk_buff *skb = rb_to_skb(p);
 
 		rb_erase(p, &q->t_root);
 		skb->next = NULL;
@@ -384,7 +378,7 @@ static void tfifo_enqueue(struct sk_buff *nskb, struct Qdisc *sch)
 		struct sk_buff *skb;
 
 		parent = *p;
-		skb = netem_rb_to_skb(parent);
+		skb = rb_to_skb(parent);
 		if (tnext >= netem_skb_cb(skb)->time_to_send)
 			p = &parent->rb_right;
 		else
@@ -524,7 +518,7 @@ static int netem_enqueue(struct sk_buff *skb, struct Qdisc *sch)
 			if (!skb_queue_empty(&sch->q))
 				last = skb_peek_tail(&sch->q);
 			else
-				last = netem_rb_to_skb(rb_last(&q->t_root));
+				last = skb_rb_last(&q->t_root);
 			if (last) {
 				/*
 				 * Last packet in queue is reference point (now),
@@ -590,7 +584,7 @@ static unsigned int netem_drop(struct Qdisc *sch)
 		struct rb_node *p = rb_first(&q->t_root);
 
 		if (p) {
-			struct sk_buff *skb = netem_rb_to_skb(p);
+			struct sk_buff *skb = rb_to_skb(p);
 
 			rb_erase(p, &q->t_root);
 			sch->q.qlen--;
@@ -630,7 +624,7 @@ deliver:
 	if (p) {
 		psched_time_t time_to_send;
 
-		skb = netem_rb_to_skb(p);
+		skb = rb_to_skb(p);
 
 		/* if more time remaining? */
 		time_to_send = netem_skb_cb(skb)->time_to_send;
