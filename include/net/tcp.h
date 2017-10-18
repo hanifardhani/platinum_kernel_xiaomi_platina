@@ -1611,9 +1611,9 @@ struct tcp_fastopen_request {
 	int				copied;	/* queued in tcp_connect() */
 };
 void tcp_free_fastopen_req(struct tcp_sock *tp);
-
+void tcp_fastopen_destroy_cipher(struct sock *sk);
 extern struct tcp_fastopen_context __rcu *tcp_fastopen_ctx;
-int tcp_fastopen_reset_cipher(void *key, unsigned int len);
+int tcp_fastopen_reset_cipher(struct sock *sk, void *key, unsigned int len);
 void tcp_fastopen_add_skb(struct sock *sk, struct sk_buff *skb);
 struct sock *tcp_try_fastopen(struct sock *sk, struct sk_buff *skb,
 			      struct request_sock *req,
