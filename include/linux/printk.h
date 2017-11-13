@@ -158,7 +158,6 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
 
 extern int printk_delay_msec;
 extern int dmesg_restrict;
-extern int kptr_restrict;
 
 extern void wake_up_klogd(void);
 
@@ -229,6 +228,8 @@ static inline void show_regs_print_info(const char *log_lvl)
 {
 }
 #endif
+
+extern int kptr_restrict;
 
 extern asmlinkage void dump_stack(void) __cold;
 
