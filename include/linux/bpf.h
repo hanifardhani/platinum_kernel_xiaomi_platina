@@ -341,7 +341,6 @@ extern const struct file_operations bpf_map_fops;
 extern const struct file_operations bpf_prog_fops;
 
 struct bpf_prog *bpf_prog_get(u32 ufd);
-struct bpf_prog *bpf_prog_get_type(u32 ufd, enum bpf_prog_type type);
 struct bpf_prog *bpf_prog_get_type_dev(u32 ufd, enum bpf_prog_type type,
 				       bool attach_drv);
 struct bpf_prog * __must_check bpf_prog_add(struct bpf_prog *prog, int i);
@@ -428,12 +427,6 @@ static inline struct bpf_prog *bpf_prog_get(u32 ufd)
 	return ERR_PTR(-EOPNOTSUPP);
 }
 
-static inline struct bpf_prog *bpf_prog_get_type(u32 ufd,
-						 enum bpf_prog_type type)
-{
-	return ERR_PTR(-EOPNOTSUPP);
-}
-
 static inline struct bpf_prog *bpf_prog_get_type_dev(u32 ufd,
 						     enum bpf_prog_type type,
 						     bool attach_drv)
@@ -506,6 +499,12 @@ static inline void __dev_map_flush(struct bpf_map *map)
 {
 }
 #endif /* CONFIG_BPF_SYSCALL */
+
+static inline struct bpf_prog *bpf_prog_get_type(u32 ufd,
+						 enum bpf_prog_type type)
+{
+	return bpf_prog_get_type_dev(ufd, type, false);
+}
 
 int bpf_prog_offload_compile(struct bpf_prog *prog);
 void bpf_prog_offload_destroy(struct bpf_prog *prog);
