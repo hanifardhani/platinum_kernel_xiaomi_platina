@@ -228,8 +228,9 @@ struct tcp_sock {
 		rate_app_limited:1,  /* rate_{delivered,interval_us} limited? */
 		fastopen_connect:1, /* FASTOPEN_CONNECT sockopt */
 		fastopen_no_cookie:1, /* Allow send/recv SYN+data without a cookie */
+		is_sack_reneg:1,    /* in recovery from loss with SACK reneg? */
 		tlp_retrans:1,	/* TLP is a retransmission */
-		unused:2;
+		unused:1;
 	u8	nonagle     : 4,/* Disable Nagle algorithm?             */
 		thin_lto    : 1,/* Use linear timeouts for thin streams */
 		unused1	    : 1,
