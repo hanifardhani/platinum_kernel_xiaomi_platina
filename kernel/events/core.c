@@ -4550,6 +4550,8 @@ static long _perf_ioctl(struct perf_event *event, unsigned int cmd, unsigned lon
 	case PERF_EVENT_IOC_SET_DRV_CONFIGS:
 		return perf_event_drv_configs(event, (void __user *)arg);
 
+	case PERF_EVENT_IOC_QUERY_BPF:
+ 		return bpf_event_query_prog_array(event, (void __user *)arg);
 	default:
 		return -ENOTTY;
 	}
