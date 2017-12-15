@@ -1325,7 +1325,7 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *fp)
 	struct bpf_jit jit;
 	int pass;
 
-	if (!bpf_jit_enable)
+	if (!fp->jit_requested)
 		return fp;
 
 	memset(&jit, 0, sizeof(jit));
