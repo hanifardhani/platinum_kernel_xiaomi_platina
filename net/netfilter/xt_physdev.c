@@ -106,9 +106,7 @@ static int physdev_mt_check(const struct xt_mtchk_param *par)
 	     info->invert & XT_PHYSDEV_OP_BRIDGED) &&
 	    par->hook_mask & ((1 << NF_INET_LOCAL_OUT) |
 	    (1 << NF_INET_FORWARD) | (1 << NF_INET_POST_ROUTING))) {
-		pr_info("using --physdev-out in the OUTPUT, FORWARD and "
-			"POSTROUTING chains for non-bridged traffic is not "
-			"supported anymore.\n");
+		pr_info_ratelimited("--physdev-out in OUTPUT, FORWARD and POSTROUTING chains for non-bridged traffic is not supported anymore\n");
 		if (par->hook_mask & (1 << NF_INET_LOCAL_OUT))
 			return -EINVAL;
 	}
