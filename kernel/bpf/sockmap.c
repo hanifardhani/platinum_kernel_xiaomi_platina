@@ -334,6 +334,9 @@ retry:
 			if (ret > 0) {
 				if (apply)
 					apply_bytes -= ret;
+
+				sg->offset += ret;
+				sg->length -= ret;
 				size -= ret;
 				offset += ret;
 				if (uncharge)
@@ -341,8 +344,6 @@ retry:
 				goto retry;
 			}
 
-			sg->length = size;
-			sg->offset = offset;
 			return ret;
 		}
 
