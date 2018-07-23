@@ -4940,7 +4940,6 @@ new_range:
 				if (sum_tiny > sk->sk_rcvbuf >> 3)
 					return;
 			}
-
 			goto new_range;
 		}
 
@@ -4987,7 +4986,6 @@ static bool tcp_prune_ofo_queue(struct sock *sk)
 				break;
 			goal = sk->sk_rcvbuf >> 3;
 		}
-
 		node = prev;
 	} while (node);
 	tp->ooo_last_skb = rb_to_skb(prev);
