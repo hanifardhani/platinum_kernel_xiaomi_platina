@@ -2089,6 +2089,10 @@ static inline void tcp_segs_in(struct tcp_sock *tp, const struct sk_buff *skb)
 
 int tcp_peek_len(struct socket *sock);
 
+#define MODULE_ALIAS_TCP_ULP(name)				\
+	__MODULE_INFO(alias, alias_userspace, name);		\
+	__MODULE_INFO(alias, alias_tcp_ulp, "tcp-ulp-" name)
+
 /* Call BPF_SOCK_OPS program that returns an int. If the return value
  * is < 0, then the BPF op failed (for example if the loaded BPF
  * program does not support the chosen operation or there is no BPF
