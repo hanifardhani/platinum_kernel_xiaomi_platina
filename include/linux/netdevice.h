@@ -804,7 +804,6 @@ enum bpf_netdev_command {
 	 */
 	XDP_QUERY_PROG,
 	/* BPF program for offload callbacks, invoked at program load time. */
-	BPF_OFFLOAD_DESTROY,
 	BPF_OFFLOAD_MAP_ALLOC,
 	BPF_OFFLOAD_MAP_FREE,
 };
@@ -824,10 +823,6 @@ struct netdev_bpf {
 			u8 prog_attached;
 			u32 prog_id;
 		};
-		/* BPF_OFFLOAD_DESTROY */
-		struct {
-			struct bpf_prog *prog;
-		} offload;
 		/* BPF_OFFLOAD_MAP_ALLOC, BPF_OFFLOAD_MAP_FREE */
 		struct {
 			struct bpf_offloaded_map *offmap;
