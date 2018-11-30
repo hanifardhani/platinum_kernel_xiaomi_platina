@@ -1301,6 +1301,7 @@ static int __ip6_append_data(struct sock *sk,
 	struct ipv6_txoptions *opt = v6_cork->opt;
 	int csummode = CHECKSUM_NONE;
 	unsigned int maxnonfragsize, headersize;
+	bool paged, extra_uref;
 
 	skb = skb_peek_tail(queue);
 	if (!skb) {
@@ -1376,12 +1377,13 @@ emsgsize:
 		uarg = sock_zerocopy_realloc(sk, length, skb_zcopy(skb));
 		if (!uarg)
 			return -ENOBUFS;
+		extra_uref = true;
 		if (rt->dst.dev->features & NETIF_F_SG &&
 		    csummode == CHECKSUM_PARTIAL) {
 			paged = true;
 		} else {
 			uarg->zerocopy = 0;
-			skb_zcopy_set(skb, uarg);
+			skb_zcopy_set(skb, uarg, &extra_uref);
 		}
 	}
 
@@ -1510,13 +1512,6 @@ alloc_new_skb:
 			skb_reserve(skb, hh_len + sizeof(struct frag_hdr) +
 				    dst_exthdrlen);
 
-			/* Only the initial fragment is time stamped */
-			skb_shinfo(skb)->tx_flags = tx_flags;
-			tx_flags = 0;
-			skb_shinfo(skb)->tskey = tskey;
-			tskey = 0;
-			skb_zcopy_set(skb, uarg);
-
 			/*
 			 *	Find where to start putting bytes
 			 */
@@ -1547,6 +1542,13 @@ alloc_new_skb:
 			transhdrlen = 0;
 			exthdrlen = 0;
 			dst_exthdrlen = 0;
+
+			/* Only the initial fragment is time stamped */
+			skb_shinfo(skb)->tx_flags = tx_flags;
+			tx_flags = 0;
+			skb_shinfo(skb)->tskey = tskey;
+			tskey = 0;
+			skb_zcopy_set(skb, uarg, &extra_uref);
 
 			/*
 			 * Put the packet on the pending queue
@@ -1608,13 +1610,12 @@ alloc_new_skb:
 		length -= copy;
 	}
 
-	sock_zerocopy_put(uarg);
 	return 0;
 
 error_efault:
 	err = -EFAULT;
 error:
-	sock_zerocopy_put_abort(uarg);
+	sock_zerocopy_put_abort(uarg, extra_uref);
 	cork->length -= length;
 	IP6_INC_STATS(sock_net(sk), rt->rt6i_idev, IPSTATS_MIB_OUTDISCARDS);
 	return err;
