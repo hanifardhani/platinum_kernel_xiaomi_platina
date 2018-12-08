@@ -1615,7 +1615,8 @@ alloc_new_skb:
 error_efault:
 	err = -EFAULT;
 error:
-	sock_zerocopy_put_abort(uarg, extra_uref);
+	if (uarg)
+		sock_zerocopy_put_abort(uarg, extra_uref);
 	cork->length -= length;
 	IP6_INC_STATS(sock_net(sk), rt->rt6i_idev, IPSTATS_MIB_OUTDISCARDS);
 	return err;
