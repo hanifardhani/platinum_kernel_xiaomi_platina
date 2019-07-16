@@ -505,6 +505,7 @@ static inline int rcu_read_lock_sched_held(void)
 	return 1;
 }
 #endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
+int rcu_read_lock_any_held(void);
 
 #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
 
@@ -532,6 +533,11 @@ static inline int rcu_read_lock_sched_held(void)
 	return 1;
 }
 #endif /* #else #ifdef CONFIG_PREEMPT_COUNT */
+
+static inline int rcu_read_lock_any_held(void)
+{
+	return !preemptible();
+}
 
 #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
 
