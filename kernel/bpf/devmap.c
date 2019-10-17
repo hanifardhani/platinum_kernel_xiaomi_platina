@@ -141,7 +141,7 @@ static struct bpf_map *dev_map_alloc(union bpf_attr *attr)
 			err = -EINVAL;
 			goto free_dtab;
 		}
-		cost += sizeof(struct hlist_head) * dtab->n_buckets;
+		cost += (u64) sizeof(struct hlist_head) * dtab->n_buckets;
 	}
 
 	/* if map size is larger than memlock limit, reject it early */
