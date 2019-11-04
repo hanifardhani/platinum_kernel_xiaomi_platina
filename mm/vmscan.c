@@ -3491,7 +3491,6 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order,
 		 */
 		wakeup_kcompactd(pgdat, order, classzone_idx);
 
-		simple_lmk_stop_reclaim();
 		remaining = schedule_timeout(HZ/10);
 		finish_wait(&pgdat->kswapd_wait, &wait);
 		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
@@ -3503,7 +3502,6 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order,
 	 */
 	if (prepare_kswapd_sleep(pgdat, order, remaining,
 						balanced_classzone_idx)) {
-		simple_lmk_stop_reclaim();
 		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
 
 		/*
