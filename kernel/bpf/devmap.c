@@ -281,7 +281,8 @@ static struct bpf_dtab_netdev *__dev_map_hash_lookup_elem_dtab(struct bpf_map *m
 	struct hlist_head *head = dev_map_index_hash(dtab, key);
 	struct bpf_dtab_netdev *dev;
 
-	hlist_for_each_entry_rcu(dev, head, index_hlist)
+	hlist_for_each_entry_rcu(dev, head, index_hlist,
+				 lockdep_is_held(&dtab->index_lock))
 		if (dev->bit == key)
 			return dev;
 
