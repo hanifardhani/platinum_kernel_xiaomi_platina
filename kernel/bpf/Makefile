@@ -22,3 +22,4 @@ endif
 ifeq ($(CONFIG_SYSFS),y)
 obj-$(CONFIG_DEBUG_INFO_BTF) += sysfs_btf.o
 endif
+obj-$(CONFIG_BPF_PRELOAD) += preload/

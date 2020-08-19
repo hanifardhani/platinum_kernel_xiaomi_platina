@@ -1738,6 +1738,8 @@ config BPF_UNPRIV_DEFAULT_OFF
 	  disable it by setting it to 1 (from which no other transition to
 	  0 is possible anymore).
 
+source "kernel/bpf/preload/Kconfig"
+
 config USERFAULTFD
 	bool "Enable userfaultfd() system call"
 	depends on MMU
