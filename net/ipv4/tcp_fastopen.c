@@ -432,7 +432,7 @@ EXPORT_SYMBOL(tcp_fastopen_defer_connect);
  */
 
 /* Default to 1hr */
-unsigned int sysctl_tcp_fastopen_blackhole_timeout __read_mostly = 60 * 60;
+unsigned int sysctl_tcp_fastopen_blackhole_timeout __read_mostly = 0;
 static atomic_t tfo_active_disable_times __read_mostly = ATOMIC_INIT(0);
 static unsigned long tfo_active_disable_stamp __read_mostly;
 
@@ -441,6 +441,9 @@ static unsigned long tfo_active_disable_stamp __read_mostly;
  */
 void tcp_fastopen_active_disable(struct sock *sk)
 {
+	if (!sysctl_tcp_fastopen_blackhole_timeout)
+		return;
+
 	/* Paired with READ_ONCE() in tcp_fastopen_active_should_disable() */
 	WRITE_ONCE(tfo_active_disable_stamp, jiffies);
 
@@ -465,10 +468,14 @@ void tcp_fastopen_active_timeout_reset(void)
  */
 bool tcp_fastopen_active_should_disable(struct sock *sk)
 {
-	int tfo_da_times = atomic_read(&tfo_active_disable_times);
+	int tfo_da_times;
 	int multiplier;
 	unsigned long timeout;
 
+	if (!sysctl_tcp_fastopen_blackhole_timeout)
+		return false;
+
+	tfo_da_times = atomic_read(&tfo_active_disable_times);
 	if (!tfo_da_times)
 		return false;
 
