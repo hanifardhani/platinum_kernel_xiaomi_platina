@@ -599,7 +599,9 @@ tcp_fastopen_blackhole_timeout_sec - INTEGER
 	This time period will grow exponentially when more blackhole issues
 	get detected right after Fastopen is re-enabled and will reset to
 	initial value when the blackhole issue goes away.
-	By default, it is set to 1hr.
+	0 to disable the blackhole detection.
+
+	By default, it is set to 0 (feature is disabled).
 
 tcp_syn_retries - INTEGER
 	Number of times initial SYNs for an active TCP connection attempt
