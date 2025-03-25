@@ -880,7 +880,7 @@ static int gic_cpu_pm_notifier(struct notifier_block *self,
 	if (from_suspend)
 		return NOTIFY_OK;
 
-	if (cmd == CPU_PM_EXIT) {
+	if (cmd == CPU_PM_EXIT || cmd == CPU_PM_ENTER_FAILED) {
 		gic_enable_redist(true);
 		gic_cpu_sys_reg_init();
 	} else if (cmd == CPU_PM_ENTER) {
