@@ -16,6 +16,29 @@
 #include <linux/bpf_verifier.h>
 #include <linux/btf.h>
 
+#include <linux/vmalloc.h>
+#include <linux/mm.h>
+static inline void *__compat_kvmalloc(size_t size, gfp_t flags)
+{
+	gfp_t kmalloc_flags = flags;
+	void *ret;
+	if (size > PAGE_SIZE) {
+		kmalloc_flags |= __GFP_NOWARN;
+		if (!(kmalloc_flags & __GFP_REPEAT) || (size <= PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
+			kmalloc_flags |= __GFP_NORETRY;
+	}
+	ret = kmalloc(size, kmalloc_flags);
+	if (ret || size <= PAGE_SIZE)
+		return ret;
+	return __vmalloc(size, flags, PAGE_KERNEL);
+}
+static inline void *__compat_kvzalloc(size_t size, gfp_t flags)
+{
+	return __compat_kvmalloc(size, flags | __GFP_ZERO);
+}
+#define kvmalloc __compat_kvmalloc
+#define kvzalloc __compat_kvzalloc
+
 /* BTF (BPF Type Format) is the meta data format which describes
  * the data types of BPF program/map.  Hence, it basically focus
  * on the C programming language which the modern BPF is primary
