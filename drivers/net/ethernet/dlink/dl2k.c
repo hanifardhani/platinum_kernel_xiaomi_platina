@@ -1044,7 +1044,7 @@ get_stats (struct net_device *dev)
 	np->stats.rx_bytes += dr32(OctetRcvOk);
 	np->stats.tx_bytes += dr32(OctetXmtOk);
 
-	np->stats.multicast = dr32(McstFramesRcvdOk);
+	np->stats.multicast += dr32(McstFramesRcvdOk);
 	np->stats.collisions += dr32(SingleColFrames)
 			     +  dr32(MultiColFrames);
 
