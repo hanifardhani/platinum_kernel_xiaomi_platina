@@ -1355,6 +1355,8 @@ lenout:
  */
 static inline void sock_lock_init(struct sock *sk)
 {
+	sk_owner_clear(sk);
+
 	if (sk->sk_kern_sock)
 		sock_lock_init_class_and_name(
 			sk,
@@ -1463,6 +1465,9 @@ static void sk_prot_free(struct proto *prot, struct sock *sk)
 
 	cgroup_sk_free(&sk->sk_cgrp_data);
 	security_sk_free(sk);
+
+	sk_owner_put(sk);
+
 	if (slab != NULL)
 		kmem_cache_free(slab, sk);
 	else
