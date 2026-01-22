@@ -1476,6 +1476,7 @@ static int ncm_bind(struct usb_configuration *c, struct usb_function *f)
 		goto netdev_cleanup;
 	}
 	ncm->port.ioport = netdev_priv(ncm_opts->net);
+	ncm_string_defs[1].s = ncm->ethaddr;
 
 	us = usb_gstrings_attach(cdev, ncm_strings,
 				 ARRAY_SIZE(ncm_string_defs));
@@ -1708,7 +1709,6 @@ static struct usb_function *ncm_alloc(struct usb_function_instance *fi)
 	opts = container_of(fi, struct f_ncm_opts, func_inst);
 	mutex_lock(&opts->lock);
 	opts->refcnt++;
-	ncm_string_defs[STRING_MAC_IDX].s = ncm->ethaddr;
 	spin_lock_init(&ncm->lock);
 	ncm_reset_values(ncm);
 	mutex_unlock(&opts->lock);
