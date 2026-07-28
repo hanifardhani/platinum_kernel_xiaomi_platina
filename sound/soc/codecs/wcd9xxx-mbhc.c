@@ -400,10 +400,10 @@ static bool __wcd9xxx_switch_micbias(struct wcd9xxx_mbhc *mbhc,
 		    restartpolling)
 			wcd9xxx_pause_hs_polling(mbhc);
 
-			snd_soc_update_bits(codec, WCD9XXX_A_MAD_ANA_CTRL,
-					    0x10, 0x10);
-			snd_soc_update_bits(codec, WCD9XXX_A_LDO_H_MODE_1,
-					    0x20, 0x20);
+		snd_soc_update_bits(codec, WCD9XXX_A_MAD_ANA_CTRL,
+				    0x10, 0x10);
+		snd_soc_update_bits(codec, WCD9XXX_A_LDO_H_MODE_1,
+				    0x20, 0x20);
 		/* Reprogram thresholds */
 		if (d->micb_mv != VDDIO_MICBIAS_MV) {
 			cfilt_k_val =
@@ -5502,9 +5502,6 @@ int wcd9xxx_mbhc_init(struct wcd9xxx_mbhc *mbhc, struct wcd9xxx_resmgr *resmgr,
 				__func__);
 			return ret;
 		}
-
-		set_bit(INPUT_PROP_NO_DUMMY_RELEASE,
-			mbhc->button_jack.jack->input_dev->propbit);
 
 		INIT_DELAYED_WORK(&mbhc->mbhc_firmware_dwork,
 				  wcd9xxx_mbhc_fw_read);

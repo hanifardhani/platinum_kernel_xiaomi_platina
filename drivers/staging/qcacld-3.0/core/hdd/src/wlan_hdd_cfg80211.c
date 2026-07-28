@@ -14186,16 +14186,16 @@ static void wlan_hdd_update_band_cap(hdd_context_t *hdd_ctx)
 			 * According to mcs_nss HT MCS parameters highest data
 			 * rate for Nss = 1 is 150 Mbps
 			 */
-		 band_2g->ht_cap.mcs.rx_highest =
-				cpu_to_le16(150 * hdd_ctx->num_rf_chains);
+		band_2g->ht_cap.mcs.rx_highest =
+			cpu_to_le16(150 * hdd_ctx->num_rf_chains);
 	}
 	if (band_5g) {
 		for (i = 0; i < hdd_ctx->num_rf_chains; i++)
 			band_5g->ht_cap.mcs.rx_mask[i] = 0xff;
-		/*
-		 * According to mcs_nss HT MCS parameters highest data
-		 * rate for Nss = 1 is 150 Mbps
-		 */
+			/*
+			 * According to mcs_nss HT MCS parameters highest data
+			 * rate for Nss = 1 is 150 Mbps
+			 */
 		band_5g->ht_cap.mcs.rx_highest =
 			cpu_to_le16(150 * hdd_ctx->num_rf_chains);
 	}
@@ -18337,10 +18337,10 @@ static int wlan_hdd_cfg80211_set_privacy(hdd_adapter_t *pAdapter,
 	pWextState->wpaVersion = IW_AUTH_WPA_VERSION_DISABLED;
 
 	if (req->crypto.wpa_versions) {
-		if (NL80211_WPA_VERSION_1 == req->crypto.wpa_versions)
-			pWextState->wpaVersion = IW_AUTH_WPA_VERSION_WPA;
-		else if (NL80211_WPA_VERSION_2 == req->crypto.wpa_versions)
+		if (req->crypto.wpa_versions & (NL80211_WPA_VERSION_2 | NL80211_WPA_VERSION_3))
 			pWextState->wpaVersion = IW_AUTH_WPA_VERSION_WPA2;
+		else if (req->crypto.wpa_versions & NL80211_WPA_VERSION_1)
+			pWextState->wpaVersion = IW_AUTH_WPA_VERSION_WPA;
 	}
 
 	hdd_debug("set wpa version to %d", pWextState->wpaVersion);
