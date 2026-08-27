@@ -303,9 +303,10 @@ static struct dst_entry *dn_dst_check(struct dst_entry *dst, __u32 cookie)
 	return NULL;
 }
 
-static void dn_dst_negative_advice(struct sock *sk, struct dst_entry *dst)
+static struct dst_entry *dn_dst_negative_advice(struct dst_entry *dst)
 {
-	sk_dst_reset(sk);
+	dst_release(dst);
+	return NULL;
 }
 
 static void dn_dst_link_failure(struct sk_buff *skb)
